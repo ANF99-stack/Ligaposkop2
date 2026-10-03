@@ -11,7 +11,6 @@
     <style>
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         [x-cloak] { display: none !important; }
-        /* Custom smooth scrollbar for mobile overflow */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
         ::-webkit-scrollbar-thumb { background: rgba(52, 211, 153, 0.4); border-radius: 4px; }
@@ -27,7 +26,7 @@
                 </div>
                 <div>
                     <h1 class="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent leading-tight" x-text="'LIGA POSKO PRIANGAN 2'"></h1>
-                    <p class="text-[10px] text-slate-400">Klasemen & Pertandingan Real-Time</p>
+                    <p class="text-[10px] text-slate-400">Klasemen & Pertandingan Real-Time Online</p>
                 </div>
             </div>
             <div class="flex items-center gap-1.5">
@@ -66,18 +65,17 @@
             <button @click="notification.show = false" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
-        <!-- TAB 1: STANDINGS (KLASEMEN) MOBILE OPTIMIZED -->
+        <!-- TAB 1: STANDINGS (KLASEMEN) -->
         <div x-show="activeTab === 'standings'" class="space-y-4">
             <div class="bg-slate-900/90 p-3.5 sm:p-4 rounded-2xl border border-slate-800 shadow-lg space-y-2.5">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div>
                         <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-ranking-star text-emerald-400"></i> Klasemen Sementara
+                            <i class="fa-solid fa-ranking-star text-emerald-400"></i> Klasemen Sementara Online
                         </h2>
                         <p class="text-[11px] text-slate-400">Poin: Menang (3), Seri (1), Kalah (0)</p>
                     </div>
                 </div>
-                <!-- Legend -->
                 <div class="flex flex-wrap items-center gap-2.5 text-[10px] pt-1 border-t border-slate-800/80">
                     <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span><span class="text-slate-300">Champions (1-2)</span></div>
                     <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span><span class="text-slate-300">Europa (3-4)</span></div>
@@ -85,7 +83,6 @@
                 </div>
             </div>
 
-            <!-- Table Container for Mobile -->
             <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
@@ -140,21 +137,20 @@
             </div>
         </div>
 
-        <!-- TAB 2: MATCHES (JADWAL & HASIL) MOBILE OPTIMIZED -->
+        <!-- TAB 2: MATCHES (JADWAL & HASIL) -->
         <div x-show="activeTab === 'matches'" class="space-y-4" x-cloak>
             <div class="bg-slate-900/90 p-3.5 sm:p-4 rounded-2xl border border-slate-800 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-calendar-days text-emerald-400"></i> Jadwal & Skor
+                        <i class="fa-solid fa-calendar-days text-emerald-400"></i> Jadwal & Skor Online
                     </h2>
-                    <p class="text-[11px] text-slate-400">Perbarui skor untuk update otomatis klasemen.</p>
+                    <p class="text-[11px] text-slate-400">Perbarui skor untuk update otomatis database online.</p>
                 </div>
                 <button @click="openAddMatchModal()" class="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg flex items-center justify-center gap-2">
                     <i class="fa-solid fa-plus"></i> Tambah Pertandingan
                 </button>
             </div>
 
-            <!-- Match Cards Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <template x-for="(match, index) in matches" :key="match.id">
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-lg flex flex-col justify-between gap-3">
@@ -167,22 +163,16 @@
                             </div>
                         </div>
 
-                        <!-- Scoreboard Container -->
                         <div class="flex items-center justify-between py-1">
-                            <!-- Home Team -->
                             <div class="flex-1 text-right pr-2 overflow-hidden">
                                 <span class="font-bold text-white text-xs sm:text-sm block truncate" x-text="match.homeTeam"></span>
                                 <span class="text-[9px] text-slate-400">Home</span>
                             </div>
-
-                            <!-- Score Box -->
                             <div class="flex items-center gap-1.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 shadow-inner flex-shrink-0">
                                 <span class="text-base font-black text-white w-5 text-center" x-text="match.played ? match.homeScore : '-'"></span>
                                 <span class="text-slate-600 font-bold">:</span>
                                 <span class="text-base font-black text-white w-5 text-center" x-text="match.played ? match.awayScore : '-'"></span>
                             </div>
-
-                            <!-- Away Team -->
                             <div class="flex-1 text-left pl-2 overflow-hidden">
                                 <span class="font-bold text-white text-xs sm:text-sm block truncate" x-text="match.awayTeam"></span>
                                 <span class="text-[9px] text-slate-400">Away</span>
@@ -199,16 +189,15 @@
             </div>
         </div>
 
-        <!-- TAB 3: TEAMS (KELOLA TIM) MOBILE OPTIMIZED -->
+        <!-- TAB 3: TEAMS (KELOLA TIM) -->
         <div x-show="activeTab === 'teams'" class="space-y-4" x-cloak>
             <div class="bg-slate-900/90 p-3.5 sm:p-4 rounded-2xl border border-slate-800 shadow-lg space-y-3">
                 <div>
                     <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-shield-halved text-emerald-400"></i> Kelola Klub Peserta
+                        <i class="fa-solid fa-shield-halved text-emerald-400"></i> Kelola Klub Peserta Online
                     </h2>
-                    <p class="text-[11px] text-slate-400">Tambahkan atau hapus klub peserta liga.</p>
+                    <p class="text-[11px] text-slate-400">Tambahkan atau hapus klub peserta liga secara online.</p>
                 </div>
-                <!-- Add Team Form -->
                 <form @submit.prevent="addTeam()" class="flex items-center gap-2">
                     <input type="text" x-model="newTeamName" placeholder="Nama klub baru..." required class="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 flex-1">
                     <button type="submit" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow flex items-center gap-1.5 whitespace-nowrap">
@@ -217,7 +206,6 @@
                 </form>
             </div>
 
-            <!-- Teams Grid Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 <template x-for="team in teams" :key="team">
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-lg flex items-center justify-between gap-3">
@@ -329,24 +317,52 @@
                 },
                 newTeamName: '',
 
-                init() {
-                    const savedTeams = localStorage.getItem('fb_teams_mobile');
-                    const savedMatches = localStorage.getItem('fb_matches_mobile');
-                    if (savedTeams) {
-                        this.teams = JSON.parse(savedTeams);
-                    } else {
-                        this.teams = [];
-                    }
-                    if (savedMatches) {
-                        this.matches = JSON.parse(savedMatches);
-                    } else {
-                        this.matches = [];
+                // Ganti URL di bawah ini dengan URL Web App Google Apps Script Anda (berakhiran /exec)
+                WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbw_CJAPiezzeQpdI7B2ejHZOHsM_jCGIQS2qQvfadkNGO_nSuJR5wn_jxY2bme4IfsZYA/exec',
+
+                async init() {
+                    await this.loadFromOnlineStorage();
+                },
+
+                async loadFromOnlineStorage() {
+                    this.showNotification('Memuat data dari server online...', 'success');
+                    try {
+                        let response = await fetch(this.WEB_APP_URL);
+                        let data = await response.json();
+                        if (data.teams) this.teams = data.teams;
+                        if (data.matches) this.matches = data.matches;
+                        this.showNotification('Data online berhasil dimuat!');
+                    } catch (error) {
+                        console.error(error);
+                        this.showNotification('Gagal memuat data online, menggunakan cache lokal.', 'error');
+                        this.teams = JSON.parse(localStorage.getItem('fb_teams_mobile') || '[]');
+                        this.matches = JSON.parse(localStorage.getItem('fb_matches_mobile') || '[]');
                     }
                 },
 
-                saveToStorage() {
+                async saveToStorage() {
+                    // Backup lokal instan
                     localStorage.setItem('fb_teams_mobile', JSON.stringify(this.teams));
                     localStorage.setItem('fb_matches_mobile', JSON.stringify(this.matches));
+
+                    // Kirim dan simpan ke database Google Sheets secara online
+                    try {
+                        let payload = {
+                            teams: this.teams,
+                            matches: this.matches
+                        };
+                        
+                        await fetch(this.WEB_APP_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                    } catch (error) {
+                        console.error('Gagal menyimpan online:', error);
+                    }
                 },
 
                 showNotification(message, type = 'success') {
@@ -364,7 +380,7 @@
                     this.teams.push(trimmed);
                     this.newTeamName = '';
                     this.saveToStorage();
-                    this.showNotification('Klub berhasil ditambahkan!');
+                    this.showNotification('Klub berhasil ditambahkan & disinkronkan online!');
                 },
 
                 deleteTeam(teamName) {
@@ -413,7 +429,7 @@
                             match.awayScore = parseInt(this.matchForm.awayScore);
                             match.played = true;
                         }
-                        this.showNotification('Skor pertandingan diperbarui!');
+                        this.showNotification('Skor pertandingan diperbarui & disinkronkan!');
                     } else {
                         const newMatch = {
                             id: Date.now(),
@@ -451,7 +467,7 @@
                         { id: 105, homeTeam: 'Persib Bandung', awayTeam: 'Persebaya Surabaya', homeScore: 2, awayScore: 2, played: true }
                     ];
                     this.saveToStorage();
-                    this.showNotification('Data sampel dimuat!');
+                    this.showNotification('Data sampel dimuat & disinkronkan online!');
                 },
 
                 resetLeague() {
@@ -460,6 +476,7 @@
                     this.matches = [];
                     localStorage.removeItem('fb_teams_mobile');
                     localStorage.removeItem('fb_matches_mobile');
+                    this.saveToStorage();
                     this.showNotification('Liga direset.');
                 },
 
