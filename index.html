@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aplikasi Klasemen Liga Bola Profesional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        [x-cloak] { display: none !important; }
+        /* Custom smooth scrollbar for mobile overflow */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(52, 211, 153, 0.4); border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-full flex flex-col pb-20 sm:pb-0" x-data="footballLeague()">
+
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
+        <div class="max-w-md sm:max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2.5">
+                <div class="bg-emerald-600 text-white w-9 h-9 rounded-xl shadow-md flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-trophy text-base"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent leading-tight" x-text="'LIGA POSKO PRIANGAN 2'"></h1>
+                    <p class="text-[10px] text-slate-400">Klasemen & Pertandingan Real-Time</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button @click="loadSampleData()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition shadow flex items-center justify-center border border-slate-700" title="Data Sampel">
+                    <i class="fa-solid fa-rotate-right text-xs"></i>
+                </button>
+                <button @click="resetLeague()" class="p-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 text-xs font-semibold rounded-xl transition shadow flex items-center justify-center border border-rose-500/30" title="Reset Liga">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="hidden sm:block bg-slate-900/60 border-b border-slate-800 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-4 overflow-x-auto">
+            <button @click="activeTab = 'standings'" :class="activeTab === 'standings' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap transition rounded-t-lg">
+                <i class="fa-solid fa-list-ol"></i> Klasemen
+            </button>
+            <button @click="activeTab = 'matches'" :class="activeTab === 'matches' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap transition rounded-t-lg">
+                <i class="fa-solid fa-futbol"></i> Jadwal & Hasil (<span x-text="matches.length"></span>)
+            </button>
+            <button @click="activeTab = 'teams'" :class="activeTab === 'teams' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap transition rounded-t-lg">
+                <i class="fa-solid fa-shield-halved"></i> Kelola Tim (<span x-text="teams.length"></span>)
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-md sm:max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        
+        <!-- Toast Notification -->
+        <div x-show="notification.show" x-transition class="mb-4 p-3.5 rounded-2xl shadow-lg border flex items-center justify-between text-xs sm:text-sm" :class="notification.type === 'success' ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-200' : 'bg-rose-950/80 border-rose-500/40 text-rose-200'">
+            <div class="flex items-center gap-2.5">
+                <i :class="notification.type === 'success' ? 'fa-solid fa-circle-check text-emerald-400' : 'fa-solid fa-circle-exclamation text-rose-400'" class="text-base flex-shrink-0"></i>
+                <span class="font-medium" x-text="notification.message"></span>
+            </div>
+            <button @click="notification.show = false" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- TAB 1: STANDINGS (KLASEMEN) MOBILE OPTIMIZED -->
+        <div x-show="activeTab === 'standings'" class="space-y-4">
+            <div class="bg-slate-900/90 p-3.5 sm:p-4 rounded-2xl border border-slate-800 shadow-lg space-y-2.5">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-ranking-star text-emerald-400"></i> Klasemen Sementara
+                        </h2>
+                        <p class="text-[11px] text-slate-400">Poin: Menang (3), Seri (1), Kalah (0)</p>
+                    </div>
+                </div>
+                <!-- Legend -->
+                <div class="flex flex-wrap items-center gap-2.5 text-[10px] pt-1 border-t border-slate-800/80">
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span><span class="text-slate-300">Champions (1-2)</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span><span class="text-slate-300">Europa (3-4)</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span><span class="text-slate-300">Degradasi</span></div>
+                </div>
+            </div>
+
+            <!-- Table Container for Mobile -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-950/70 border-b border-slate-800 text-slate-400 text-[10px] sm:text-xs uppercase tracking-wider">
+                                <th class="py-3 px-2.5 text-center font-semibold w-12">Pos</th>
+                                <th class="py-3 px-3 font-semibold">Klub</th>
+                                <th class="py-3 px-2 text-center font-semibold" title="Main">Ma</th>
+                                <th class="py-3 px-2 text-center font-semibold" title="Menang">M</th>
+                                <th class="py-3 px-2 text-center font-semibold" title="Seri">S</th>
+                                <th class="py-3 px-2 text-center font-semibold" title="Kalah">K</th>
+                                <th class="py-3 px-2 text-center font-semibold hidden sm:table-cell" title="Gol Memasukkan">GM</th>
+                                <th class="py-3 px-2 text-center font-semibold hidden sm:table-cell" title="Gol Kemasukan">GK</th>
+                                <th class="py-3 px-2 text-center font-semibold" title="Selisih Gol">SG</th>
+                                <th class="py-3 px-3 text-center font-bold text-emerald-400" title="Poin">Poin</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60">
+                            <template x-for="(row, index) in calculatedStandings" :key="row.id">
+                                <tr class="hover:bg-slate-800/40 transition">
+                                    <td class="py-3 px-2.5 text-center font-medium relative">
+                                        <div class="absolute left-0 top-0 bottom-0 w-1.5" :class="{
+                                            'bg-emerald-500': index < 2,
+                                            'bg-amber-500': index >= 2 && index < 4,
+                                            'bg-rose-500': index >= calculatedStandings.length - 2 && calculatedStandings.length >= 4,
+                                            'bg-transparent': !(index < 4 || index >= calculatedStandings.length - 2)
+                                        }"></div>
+                                        <span x-text="index + 1" class="font-bold text-slate-200"></span>
+                                    </td>
+                                    <td class="py-3 px-3 font-semibold text-white flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-emerald-400 border border-slate-700 shadow-sm flex-shrink-0" x-text="row.name.substring(0,2).toUpperCase()"></div>
+                                        <span class="truncate max-w-[100px] sm:max-w-xs" x-text="row.name"></span>
+                                    </td>
+                                    <td class="py-3 px-2 text-center text-slate-300" x-text="row.played"></td>
+                                    <td class="py-3 px-2 text-center text-slate-300" x-text="row.won"></td>
+                                    <td class="py-3 px-2 text-center text-slate-300" x-text="row.drawn"></td>
+                                    <td class="py-3 px-2 text-center text-slate-300" x-text="row.lost"></td>
+                                    <td class="py-3 px-2 text-center text-slate-300 hidden sm:table-cell" x-text="row.gf"></td>
+                                    <td class="py-3 px-2 text-center text-slate-300 hidden sm:table-cell" x-text="row.ga"></td>
+                                    <td class="py-3 px-2 text-center font-medium" :class="row.gd > 0 ? 'text-emerald-400' : (row.gd < 0 ? 'text-rose-400' : 'text-slate-400')" x-text="row.gd > 0 ? '+' + row.gd : row.gd"></td>
+                                    <td class="py-3 px-3 text-center font-extrabold text-white bg-slate-800/40 text-sm" x-text="row.points"></td>
+                                </tr>
+                            </template>
+                            <template x-if="calculatedStandings.length === 0">
+                                <tr>
+                                    <td colspan="10" class="py-10 text-center text-slate-400 text-xs">Belum ada tim terdaftar. Silakan tambahkan di menu Kelola Tim.</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: MATCHES (JADWAL & HASIL) MOBILE OPTIMIZED -->
+        <div x-show="activeTab === 'matches'" class="space-y-4" x-cloak>
+            <div class="bg-slate-900/90 p-3.5 sm:p-4 rounded-2xl border border-slate-800 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-emerald-400"></i> Jadwal & Skor
+                    </h2>
+                    <p class="text-[11px] text-slate-400">Perbarui skor untuk update otomatis klasemen.</p>
+                </div>
+                <button @click="openAddMatchModal()" class="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Tambah Pertandingan
+                </button>
+            </div>
+
+            <!-- Match Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <template x-for="(match, index) in matches" :key="match.id">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-lg flex flex-col justify-between gap-3">
+                        <div class="flex justify-between items-center text-[11px] text-slate-400 border-b border-slate-800 pb-2">
+                            <span class="font-medium text-emerald-400">Pertandingan #<span x-text="index + 1"></span></span>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-semibold" :class="match.played ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'" x-text="match.played ? 'Selesai' : 'Belum Main'"></span>
+                                <button @click="editMatch(match)" class="text-slate-400 hover:text-emerald-400 p-1.5"><i class="fa-solid fa-pen-to-square text-xs"></i></button>
+                                <button @click="deleteMatch(match.id)" class="text-slate-400 hover:text-rose-400 p-1.5"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Scoreboard Container -->
+                        <div class="flex items-center justify-between py-1">
+                            <!-- Home Team -->
+                            <div class="flex-1 text-right pr-2 overflow-hidden">
+                                <span class="font-bold text-white text-xs sm:text-sm block truncate" x-text="match.homeTeam"></span>
+                                <span class="text-[9px] text-slate-400">Home</span>
+                            </div>
+
+                            <!-- Score Box -->
+                            <div class="flex items-center gap-1.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 shadow-inner flex-shrink-0">
+                                <span class="text-base font-black text-white w-5 text-center" x-text="match.played ? match.homeScore : '-'"></span>
+                                <span class="text-slate-600 font-bold">:</span>
+                                <span class="text-base font-black text-white w-5 text-center" x-text="match.played ? match.awayScore : '-'"></span>
+                            </div>
+
+                            <!-- Away Team -->
+                            <div class="flex-1 text-left pl-2 overflow-hidden">
+                                <span class="font-bold text-white text-xs sm:text-sm block truncate" x-text="match.awayTeam"></span>
+                                <span class="text-[9px] text-slate-400">Away</span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="matches.length === 0">
+                    <div class="col-span-full py-12 text-center text-slate-400 bg-slate-900/50 rounded-2xl border border-slate-800">
+                        <i class="fa-solid fa-calendar-xmark text-2xl mb-2 text-slate-600"></i>
+                        <p class="text-xs">Belum ada jadwal pertandingan.</p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- TAB 3: TEAMS (KELOLA TIM) MOBILE OPTIMIZED -->
+        <div x-show="activeTab === 'teams'" class="space-y-4" x-cloak>
+            <div class="bg-slate-900/90 p-3.5 sm:p-4 rounded-2xl border border-slate-800 shadow-lg space-y-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-emerald-400"></i> Kelola Klub Peserta
+                    </h2>
+                    <p class="text-[11px] text-slate-400">Tambahkan atau hapus klub peserta liga.</p>
+                </div>
+                <!-- Add Team Form -->
+                <form @submit.prevent="addTeam()" class="flex items-center gap-2">
+                    <input type="text" x-model="newTeamName" placeholder="Nama klub baru..." required class="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 flex-1">
+                    <button type="submit" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow flex items-center gap-1.5 whitespace-nowrap">
+                        <i class="fa-solid fa-plus"></i> Tambah
+                    </button>
+                </form>
+            </div>
+
+            <!-- Teams Grid Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <template x-for="team in teams" :key="team">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-lg flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5 overflow-hidden">
+                            <div class="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-xs font-bold text-emerald-400 border border-slate-700 shadow-inner flex-shrink-0" x-text="team.substring(0,2).toUpperCase()"></div>
+                            <span class="font-semibold text-white truncate text-xs sm:text-sm" x-text="team"></span>
+                        </div>
+                        <button @click="deleteTeam(team)" class="text-slate-400 hover:text-rose-400 p-2 rounded-xl hover:bg-rose-500/10 transition" title="Hapus Tim">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </template>
+                <template x-if="teams.length === 0">
+                    <div class="col-span-full py-12 text-center text-slate-400 bg-slate-900/50 rounded-2xl border border-slate-800">
+                        <i class="fa-solid fa-shield text-2xl mb-2 text-slate-600"></i>
+                        <p class="text-xs">Belum ada klub terdaftar.</p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MOBILE BOTTOM NAVIGATION BAR -->
+    <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 z-50 px-4 py-2 flex justify-around items-center shadow-2xl">
+        <button @click="activeTab = 'standings'" :class="activeTab === 'standings' ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center justify-center py-1.5 px-4 rounded-xl transition gap-1">
+            <i class="fa-solid fa-list-ol text-base"></i>
+            <span class="text-[10px] font-medium">Klasemen</span>
+        </button>
+        <button @click="activeTab = 'matches'" :class="activeTab === 'matches' ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center justify-center py-1.5 px-4 rounded-xl transition gap-1 relative">
+            <i class="fa-solid fa-futbol text-base"></i>
+            <span class="text-[10px] font-medium">Jadwal</span>
+            <span class="absolute top-1 right-3 w-4 h-4 bg-emerald-600 text-white rounded-full text-[9px] font-bold flex items-center justify-center" x-text="matches.length"></span>
+        </button>
+        <button @click="activeTab = 'teams'" :class="activeTab === 'teams' ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center justify-center py-1.5 px-4 rounded-xl transition gap-1 relative">
+            <i class="fa-solid fa-shield-halved text-base"></i>
+            <span class="text-[10px] font-medium">Tim</span>
+            <span class="absolute top-1 right-3 w-4 h-4 bg-emerald-600 text-white rounded-full text-[9px] font-bold flex items-center justify-center" x-text="teams.length"></span>
+        </button>
+    </nav>
+
+    <!-- MATCH MODAL -->
+    <div x-show="showMatchModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+        <div @click.away="closeMatchModal()" class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-futbol text-emerald-400"></i> <span x-text="editingMatchId ? 'Edit Skor Pertandingan' : 'Tambah Pertandingan'"></span>
+                </h3>
+                <button @click="closeMatchModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+
+            <form @submit.prevent="saveMatch()" class="space-y-3.5">
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Klub Tuan Rumah (Home)</label>
+                    <select x-model="matchForm.homeTeam" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500">
+                        <option value="">Pilih Klub Tuan Rumah...</option>
+                        <template x-for="team in teams" :key="team">
+                            <option :value="team" x-text="team" :disabled="matchForm.awayTeam === team"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Klub Tamu (Away)</label>
+                    <select x-model="matchForm.awayTeam" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500">
+                        <option value="">Pilih Klub Tamu...</option>
+                        <template x-for="team in teams" :key="team">
+                            <option :value="team" x-text="team" :disabled="matchForm.homeTeam === team"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-300 mb-1 text-center">Gol Tuan Rumah</label>
+                        <input type="number" min="0" x-model.number="matchForm.homeScore" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 text-center font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-300 mb-1 text-center">Gol Tamu</label>
+                        <input type="number" min="0" x-model.number="matchForm.awayScore" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 text-center font-bold">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                    <button type="button" @click="closeMatchModal()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg">Simpan Skor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function footballLeague() {
+            return {
+                leagueName: 'Liga Utama Bola 2026',
+                activeTab: 'standings', 
+                notification: { show: false, message: '', type: 'success' },
+                
+                teams: [],
+                matches: [],
+
+                showMatchModal: false,
+                editingMatchId: null,
+                matchForm: {
+                    homeTeam: '',
+                    awayTeam: '',
+                    homeScore: 0,
+                    awayScore: 0
+                },
+                newTeamName: '',
+
+                init() {
+                    const savedTeams = localStorage.getItem('fb_teams_mobile');
+                    const savedMatches = localStorage.getItem('fb_matches_mobile');
+                    if (savedTeams) {
+                        this.teams = JSON.parse(savedTeams);
+                    } else {
+                        this.teams = [];
+                    }
+                    if (savedMatches) {
+                        this.matches = JSON.parse(savedMatches);
+                    } else {
+                        this.matches = [];
+                    }
+                },
+
+                saveToStorage() {
+                    localStorage.setItem('fb_teams_mobile', JSON.stringify(this.teams));
+                    localStorage.setItem('fb_matches_mobile', JSON.stringify(this.matches));
+                },
+
+                showNotification(message, type = 'success') {
+                    this.notification = { show: true, message, type };
+                    setTimeout(() => { this.notification.show = false; }, 3000);
+                },
+
+                addTeam() {
+                    const trimmed = this.newTeamName.trim();
+                    if (!trimmed) return;
+                    if (this.teams.includes(trimmed)) {
+                        this.showNotification('Klub sudah terdaftar di liga!', 'error');
+                        return;
+                    }
+                    this.teams.push(trimmed);
+                    this.newTeamName = '';
+                    this.saveToStorage();
+                    this.showNotification('Klub berhasil ditambahkan!');
+                },
+
+                deleteTeam(teamName) {
+                    const involved = this.matches.some(m => m.homeTeam === teamName || m.awayTeam === teamName);
+                    if (involved) {
+                        if (!confirm(`Klub ${teamName} memiliki riwayat pertandingan. Yakin ingin menghapus? Pertandingan terkait akan ikut terhapus.`)) return;
+                        this.matches = this.matches.filter(m => m.homeTeam !== teamName && m.awayTeam !== teamName);
+                    }
+                    this.teams = this.teams.filter(t => t !== teamName);
+                    this.saveToStorage();
+                    this.showNotification('Klub berhasil dihapus.');
+                },
+
+                openAddMatchModal() {
+                    if (this.teams.length < 2) {
+                        this.showNotification('Minimal harus ada 2 klub untuk membuat jadwal!', 'error');
+                        return;
+                    }
+                    this.editingMatchId = null;
+                    this.matchForm = { homeTeam: this.teams[0] || '', awayTeam: this.teams[1] || '', homeScore: 0, awayScore: 0 };
+                    this.showMatchModal = true;
+                },
+
+                editMatch(match) {
+                    this.editingMatchId = match.id;
+                    this.matchForm = { homeTeam: match.homeTeam, awayTeam: match.awayTeam, homeScore: match.homeScore, awayScore: match.awayScore };
+                    this.showMatchModal = true;
+                },
+
+                closeMatchModal() {
+                    this.showMatchModal = false;
+                },
+
+                saveMatch() {
+                    if (this.matchForm.homeTeam === this.matchForm.awayTeam) {
+                        this.showNotification('Tuan rumah dan tim tamu tidak boleh sama!', 'error');
+                        return;
+                    }
+
+                    if (this.editingMatchId) {
+                        const match = this.matches.find(m => m.id === this.editingMatchId);
+                        if (match) {
+                            match.homeTeam = this.matchForm.homeTeam;
+                            match.awayTeam = this.matchForm.awayTeam;
+                            match.homeScore = parseInt(this.matchForm.homeScore);
+                            match.awayScore = parseInt(this.matchForm.awayScore);
+                            match.played = true;
+                        }
+                        this.showNotification('Skor pertandingan diperbarui!');
+                    } else {
+                        const newMatch = {
+                            id: Date.now(),
+                            homeTeam: this.matchForm.homeTeam,
+                            awayTeam: this.matchForm.awayTeam,
+                            homeScore: parseInt(this.matchForm.homeScore),
+                            awayScore: parseInt(this.matchForm.awayScore),
+                            played: true
+                        };
+                        this.matches.push(newMatch);
+                        this.showNotification('Pertandingan baru ditambahkan!');
+                    }
+
+                    this.saveToStorage();
+                    this.closeMatchModal();
+                },
+
+                deleteMatch(id) {
+                    if (!confirm('Hapus pertandingan ini?')) return;
+                    this.matches = this.matches.filter(m => m.id !== id);
+                    this.saveToStorage();
+                    this.showNotification('Pertandingan dihapus.');
+                },
+
+                loadSampleData() {
+                    this.teams = [
+                        'Persib Bandung', 'Persija Jakarta', 'Persebaya Surabaya', 
+                        'Bali United', 'PSM Makassar', 'Borneo FC', 'Arema FC', 'PSIS Semarang'
+                    ];
+                    this.matches = [
+                        { id: 101, homeTeam: 'Persib Bandung', awayTeam: 'Persija Jakarta', homeScore: 2, awayScore: 0, played: true },
+                        { id: 102, homeTeam: 'Persebaya Surabaya', awayTeam: 'Bali United', homeScore: 1, awayScore: 1, played: true },
+                        { id: 103, homeTeam: 'PSM Makassar', awayTeam: 'Borneo FC', homeScore: 3, awayScore: 2, played: true },
+                        { id: 104, homeTeam: 'Arema FC', awayTeam: 'PSIS Semarang', homeScore: 0, awayScore: 1, played: true },
+                        { id: 105, homeTeam: 'Persib Bandung', awayTeam: 'Persebaya Surabaya', homeScore: 2, awayScore: 2, played: true }
+                    ];
+                    this.saveToStorage();
+                    this.showNotification('Data sampel dimuat!');
+                },
+
+                resetLeague() {
+                    if (!confirm('Reset semua data tim dan pertandingan?')) return;
+                    this.teams = [];
+                    this.matches = [];
+                    localStorage.removeItem('fb_teams_mobile');
+                    localStorage.removeItem('fb_matches_mobile');
+                    this.showNotification('Liga direset.');
+                },
+
+                get calculatedStandings() {
+                    const tableMap = {};
+
+                    this.teams.forEach(team => {
+                        tableMap[team] = {
+                            id: team,
+                            name: team,
+                            played: 0,
+                            won: 0,
+                            drawn: 0,
+                            lost: 0,
+                            gf: 0,
+                            ga: 0,
+                            gd: 0,
+                            points: 0
+                        };
+                    });
+
+                    this.matches.forEach(m => {
+                        if (!m.played) return;
+                        if (!tableMap[m.homeTeam]) tableMap[m.homeTeam] = { id: m.homeTeam, name: m.homeTeam, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 };
+                        if (!tableMap[m.awayTeam]) tableMap[m.awayTeam] = { id: m.awayTeam, name: m.awayTeam, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 };
+
+                        const home = tableMap[m.homeTeam];
+                        const away = tableMap[m.awayTeam];
+
+                        home.played += 1;
+                        away.played += 1;
+
+                        home.gf += m.homeScore;
+                        home.ga += m.awayScore;
+                        away.gf += m.awayScore;
+                        away.ga += m.homeScore;
+
+                        if (m.homeScore > m.awayScore) {
+                            home.won += 1;
+                            home.points += 3;
+                            away.lost += 1;
+                        } else if (m.homeScore < m.awayScore) {
+                            away.won += 1;
+                            away.points += 3;
+                            home.lost += 1;
+                        } else {
+                            home.drawn += 1;
+                            home.points += 1;
+                            away.drawn += 1;
+                            away.points += 1;
+                        }
+                    });
+
+                    const standingsArray = Object.values(tableMap).map(team => {
+                        team.gd = team.gf - team.ga;
+                        return team;
+                    });
+
+                    standingsArray.sort((a, b) => {
+                        if (b.points !== a.points) return b.points - a.points;
+                        if (b.gd !== a.gd) return b.gd - a.gd;
+                        if (b.gf !== a.gf) return b.gf - a.gf;
+                        return a.name.localeCompare(b.name);
+                    });
+
+                    return standingsArray;
+                }
+            };
+        }
+    </script>
+</body>
+</html>
