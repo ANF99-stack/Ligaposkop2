@@ -144,7 +144,7 @@
                     <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                         <i class="fa-solid fa-calendar-days text-emerald-400"></i> Jadwal & Skor Online
                     </h2>
-                    <p class="text-[11px] text-slate-400">Perbarui skor untuk update otomatis database online.</p>
+                    <p class="text-[11px] text-slate-400">Perbarui skor & foto pertandingan untuk update otomatis.</p>
                 </div>
                 <button @click="openAddMatchModal()" class="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg flex items-center justify-center gap-2">
                     <i class="fa-solid fa-plus"></i> Tambah Pertandingan
@@ -178,6 +178,16 @@
                                 <span class="text-[9px] text-slate-400">Away</span>
                             </div>
                         </div>
+
+                        <!-- Tampilkan Foto Pertandingan Dari Server -->
+                        <template x-if="match.photo">
+                            <div class="mt-1 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                                <span class="text-[10px] text-slate-400 flex items-center gap-1"><i class="fa-solid fa-image text-emerald-400"></i> Foto Server:</span>
+                                <a :href="match.photo" target="_blank" class="block w-12 h-12 rounded-lg overflow-hidden border border-slate-700 hover:opacity-80 transition">
+                                    <img :src="match.photo" alt="Foto Pertandingan" class="w-full h-full object-cover">
+                                </a>
+                            </div>
+                        </template>
                     </div>
                 </template>
                 <template x-if="matches.length === 0">
@@ -249,10 +259,10 @@
 
     <!-- MATCH MODAL -->
     <div x-show="showMatchModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
-        <div @click.away="closeMatchModal()" class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl space-y-5">
+        <div @click.away="closeMatchModal()" class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-futbol text-emerald-400"></i> <span x-text="editingMatchId ? 'Edit Skor Pertandingan' : 'Tambah Pertandingan'"></span>
+                    <i class="fa-solid fa-futbol text-emerald-400"></i> <span x-text="editingMatchId ? 'Edit Skor & Foto' : 'Tambah Pertandingan'"></span>
                 </h3>
                 <button @click="closeMatchModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
@@ -289,9 +299,23 @@
                     </div>
                 </div>
 
+                <!-- Input Foto Pertandingan -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Upload Foto / Bukti ke Server (Opsional)</label>
+                    <input type="file" accept="image/*" @change="handleMatchPhoto($event)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer">
+                    
+                    <!-- Preview Foto -->
+                    <template x-if="matchForm.photo">
+                        <div class="mt-2 relative w-20 h-20 rounded-xl overflow-hidden border border-slate-700">
+                            <img :src="matchForm.photo" class="w-full h-full object-cover">
+                            <button type="button" @click="matchForm.photo = ''" class="absolute top-1 right-1 bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px]" title="Hapus Foto"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </template>
+                </div>
+
                 <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
                     <button type="button" @click="closeMatchModal()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg">Simpan Skor</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg">Simpan ke Server</button>
                 </div>
             </form>
         </div>
@@ -313,11 +337,11 @@
                     homeTeam: '',
                     awayTeam: '',
                     homeScore: 0,
-                    awayScore: 0
+                    awayScore: 0,
+                    photo: ''
                 },
                 newTeamName: '',
 
-                // Ganti URL di bawah ini dengan URL Web App Google Apps Script Anda (berakhiran /exec)
                 WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbw_CJAPiezzeQpdI7B2ejHZOHsM_jCGIQS2qQvfadkNGO_nSuJR5wn_jxY2bme4IfsZYA/exec',
 
                 async init() {
@@ -341,11 +365,9 @@
                 },
 
                 async saveToStorage() {
-                    // Backup lokal instan
                     localStorage.setItem('fb_teams_mobile', JSON.stringify(this.teams));
                     localStorage.setItem('fb_matches_mobile', JSON.stringify(this.matches));
 
-                    // Kirim dan simpan ke database Google Sheets secara online
                     try {
                         let payload = {
                             teams: this.teams,
@@ -360,8 +382,10 @@
                             },
                             body: JSON.stringify(payload)
                         });
+                        this.showNotification('Data & foto berhasil disimpan ke server GS!');
                     } catch (error) {
                         console.error('Gagal menyimpan online:', error);
+                        this.showNotification('Gagal mengunggah foto ke server.', 'error');
                     }
                 },
 
@@ -380,7 +404,6 @@
                     this.teams.push(trimmed);
                     this.newTeamName = '';
                     this.saveToStorage();
-                    this.showNotification('Klub berhasil ditambahkan & disinkronkan online!');
                 },
 
                 deleteTeam(teamName) {
@@ -391,7 +414,6 @@
                     }
                     this.teams = this.teams.filter(t => t !== teamName);
                     this.saveToStorage();
-                    this.showNotification('Klub berhasil dihapus.');
                 },
 
                 openAddMatchModal() {
@@ -400,18 +422,28 @@
                         return;
                     }
                     this.editingMatchId = null;
-                    this.matchForm = { homeTeam: this.teams[0] || '', awayTeam: this.teams[1] || '', homeScore: 0, awayScore: 0 };
+                    this.matchForm = { homeTeam: this.teams[0] || '', awayTeam: this.teams[1] || '', homeScore: 0, awayScore: 0, photo: '' };
                     this.showMatchModal = true;
                 },
 
                 editMatch(match) {
                     this.editingMatchId = match.id;
-                    this.matchForm = { homeTeam: match.homeTeam, awayTeam: match.awayTeam, homeScore: match.homeScore, awayScore: match.awayScore };
+                    this.matchForm = { homeTeam: match.homeTeam, awayTeam: match.awayTeam, homeScore: match.homeScore, awayScore: match.awayScore, photo: match.photo || '' };
                     this.showMatchModal = true;
                 },
 
                 closeMatchModal() {
                     this.showMatchModal = false;
+                },
+
+                handleMatchPhoto(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.matchForm.photo = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
                 },
 
                 saveMatch() {
@@ -427,9 +459,9 @@
                             match.awayTeam = this.matchForm.awayTeam;
                             match.homeScore = parseInt(this.matchForm.homeScore);
                             match.awayScore = parseInt(this.matchForm.awayScore);
+                            match.photo = this.matchForm.photo;
                             match.played = true;
                         }
-                        this.showNotification('Skor pertandingan diperbarui & disinkronkan!');
                     } else {
                         const newMatch = {
                             id: Date.now(),
@@ -437,10 +469,10 @@
                             awayTeam: this.matchForm.awayTeam,
                             homeScore: parseInt(this.matchForm.homeScore),
                             awayScore: parseInt(this.matchForm.awayScore),
+                            photo: this.matchForm.photo,
                             played: true
                         };
                         this.matches.push(newMatch);
-                        this.showNotification('Pertandingan baru ditambahkan!');
                     }
 
                     this.saveToStorage();
@@ -451,7 +483,6 @@
                     if (!confirm('Hapus pertandingan ini?')) return;
                     this.matches = this.matches.filter(m => m.id !== id);
                     this.saveToStorage();
-                    this.showNotification('Pertandingan dihapus.');
                 },
 
                 loadSampleData() {
@@ -460,14 +491,13 @@
                         'Bali United', 'PSM Makassar', 'Borneo FC', 'Arema FC', 'PSIS Semarang'
                     ];
                     this.matches = [
-                        { id: 101, homeTeam: 'Persib Bandung', awayTeam: 'Persija Jakarta', homeScore: 2, awayScore: 0, played: true },
-                        { id: 102, homeTeam: 'Persebaya Surabaya', awayTeam: 'Bali United', homeScore: 1, awayScore: 1, played: true },
-                        { id: 103, homeTeam: 'PSM Makassar', awayTeam: 'Borneo FC', homeScore: 3, awayScore: 2, played: true },
-                        { id: 104, homeTeam: 'Arema FC', awayTeam: 'PSIS Semarang', homeScore: 0, awayScore: 1, played: true },
-                        { id: 105, homeTeam: 'Persib Bandung', awayTeam: 'Persebaya Surabaya', homeScore: 2, awayScore: 2, played: true }
+                        { id: 101, homeTeam: 'Persib Bandung', awayTeam: 'Persija Jakarta', homeScore: 2, awayScore: 0, photo: '', played: true },
+                        { id: 102, homeTeam: 'Persebaya Surabaya', awayTeam: 'Bali United', homeScore: 1, awayScore: 1, photo: '', played: true },
+                        { id: 103, homeTeam: 'PSM Makassar', awayTeam: 'Borneo FC', homeScore: 3, awayScore: 2, photo: '', played: true },
+                        { id: 104, homeTeam: 'Arema FC', awayTeam: 'PSIS Semarang', homeScore: 0, awayScore: 1, photo: '', played: true },
+                        { id: 105, homeTeam: 'Persib Bandung', awayTeam: 'Persebaya Surabaya', homeScore: 2, awayScore: 2, photo: '', played: true }
                     ];
                     this.saveToStorage();
-                    this.showNotification('Data sampel dimuat & disinkronkan online!');
                 },
 
                 resetLeague() {
@@ -477,7 +507,6 @@
                     localStorage.removeItem('fb_teams_mobile');
                     localStorage.removeItem('fb_matches_mobile');
                     this.saveToStorage();
-                    this.showNotification('Liga direset.');
                 },
 
                 get calculatedStandings() {
