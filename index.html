@@ -373,41 +373,92 @@
                 async loadFromOnlineStorage() {
                     this.showNotification('Memuat data dari server online...', 'success');
                     try {
-                        let response = await fetch(this.WEB_APP_URL);
-                        let data = await response.json();
-                        if (data.teams) this.teams = data.teams;
-                        if (data.matches) this.matches = data.matches;
+                        const response = await fetch(this.WEB_APP_URL + '?_=' + Date.now(), {
+                            method: 'GET',
+                            cache: 'no-store'
+                        });
+                        if (!response.ok) throw new Error('HTTP ' + response.status);
+                        const data = await response.json();
+                        if (!Array.isArray(data.teams) || !Array.isArray(data.matches)) {
+                            throw new Error(data.error || 'Format data dari server tidak valid.');
+                        }
+                        this.teams = data.teams;
+                        this.matches = data.matches;
+                        localStorage.setItem('fb_teams_mobile', JSON.stringify(this.teams));
+                        localStorage.setItem('fb_matches_mobile', JSON.stringify(this.matches));
                         this.showNotification('Data online berhasil dimuat!');
                     } catch (error) {
                         console.error(error);
-                        this.showNotification('Gagal memuat data online, menggunakan cache lokal.', 'error');
+                        this.showNotification('Gagal memuat data online. Menampilkan cache lokal jika tersedia.', 'error');
                         this.teams = JSON.parse(localStorage.getItem('fb_teams_mobile') || '[]');
                         this.matches = JSON.parse(localStorage.getItem('fb_matches_mobile') || '[]');
                     }
                 },
 
                 async saveToStorage() {
+                    // Cache lokal hanya untuk pemulihan jika server tidak dapat dijangkau.
                     localStorage.setItem('fb_teams_mobile', JSON.stringify(this.teams));
                     localStorage.setItem('fb_matches_mobile', JSON.stringify(this.matches));
 
+                    const payload = {
+                        teams: this.teams,
+                        matches: this.matches
+                    };
+
+                    this.showNotification('Mengirim data ke server...', 'success');
+
                     try {
-                        let payload = {
-                            teams: this.teams,
-                            matches: this.matches
-                        };
-                        
+                        // text/plain adalah content type sederhana untuk request lintas-origin
+                        // dan tetap dapat dibaca GAS melalui e.postData.contents.
                         await fetch(this.WEB_APP_URL, {
                             method: 'POST',
                             mode: 'no-cors',
                             headers: {
-                                'Content-Type': 'application/json',
+                                'Content-Type': 'text/plain;charset=UTF-8'
                             },
                             body: JSON.stringify(payload)
                         });
-                        this.showNotification('Data & foto kamera berhasil disimpan ke server GS!');
+
+                        // Respons no-cors tidak dapat dibaca. Coba verifikasi dengan GET.
+                        await new Promise(resolve => setTimeout(resolve, 1200));
+                        const verifyResponse = await fetch(this.WEB_APP_URL + '?_=' + Date.now(), {
+                            method: 'GET',
+                            cache: 'no-store'
+                        });
+                        if (!verifyResponse.ok) throw new Error('Server tidak merespons saat verifikasi.');
+
+                        const saved = await verifyResponse.json();
+                        if (!Array.isArray(saved.teams) || !Array.isArray(saved.matches)) {
+                            throw new Error(saved.error || 'Format data server tidak valid.');
+                        }
+
+                        const sameTeams = JSON.stringify(saved.teams) === JSON.stringify(payload.teams);
+                        const normalizeMatch = m => ({
+                            id: String(m.id),
+                            homeTeam: m.homeTeam || '',
+                            awayTeam: m.awayTeam || '',
+                            homeScore: Number(m.homeScore || 0),
+                            awayScore: Number(m.awayScore || 0),
+                            played: Boolean(m.played)
+                        });
+                        const savedMatchesCore = saved.matches.map(normalizeMatch).sort((a, b) => a.id.localeCompare(b.id));
+                        const sentMatchesCore = payload.matches.map(normalizeMatch).sort((a, b) => a.id.localeCompare(b.id));
+                        const sameMatchIds = JSON.stringify(savedMatchesCore) === JSON.stringify(sentMatchesCore);
+
+                        // Gunakan hasil server sebagai data utama, termasuk URL foto hasil konversi GAS.
+                        this.teams = saved.teams;
+                        this.matches = saved.matches;
+                        localStorage.setItem('fb_teams_mobile', JSON.stringify(this.teams));
+                        localStorage.setItem('fb_matches_mobile', JSON.stringify(this.matches));
+
+                        if (sameTeams && sameMatchIds) {
+                            this.showNotification('Data berhasil tersimpan dan diverifikasi dari server.');
+                        } else {
+                            this.showNotification('Data server berbeda dari input. Periksa koneksi/deployment GAS.', 'error');
+                        }
                     } catch (error) {
-                        console.error('Gagal menyimpan online:', error);
-                        this.showNotification('Gagal mengunggah foto ke server.', 'error');
+                        console.error('Penyimpanan/verifikasi server gagal:', error);
+                        this.showNotification('Belum dapat memverifikasi penyimpanan server. Data lokal disimpan; periksa deployment dan akses GAS.', 'error');
                     }
                 },
 
