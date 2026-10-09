@@ -29,17 +29,6 @@
                     <p class="text-[10px] text-slate-400">Klasemen & Pertandingan Real-Time Online</p>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5">
-                <button @click="loadSampleData()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition shadow flex items-center justify-center border border-slate-700" title="Data Sampel">
-                    <i class="fa-solid fa-rotate-right text-xs"></i>
-                </button>
-                <button @click="resetLeague()" class="p-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 text-xs font-semibold rounded-xl transition shadow flex items-center justify-center border border-rose-500/30" title="Reset Liga">
-                    <i class="fa-solid fa-trash-can text-xs"></i>
-                </button>
-            </div>
-        </div>
-    </header>
-
     <nav class="hidden sm:block bg-slate-900/60 border-b border-slate-800 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-4 overflow-x-auto">
             <button @click="activeTab = 'standings'" :class="activeTab === 'standings' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap transition rounded-t-lg">
