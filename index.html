@@ -98,12 +98,6 @@
                             <template x-for="(row, index) in calculatedStandings" :key="row.id">
                                 <tr class="hover:bg-slate-800/40 transition">
                                     <td class="py-3 px-2.5 text-center font-medium relative">
-                                        <div class="absolute left-0 top-0 bottom-0 w-1.5" :class="{
-                                            'bg-emerald-500': index < 2,
-                                            'bg-amber-500': index >= 2 && index < 4,
-                                            'bg-rose-500': index >= calculatedStandings.length - 2 && calculatedStandings.length >= 4,
-                                            'bg-transparent': !(index < 4 || index >= calculatedStandings.length - 2)
-                                        }"></div>
                                         <span x-text="index + 1" class="font-bold text-slate-200"></span>
                                     </td>
                                     <td class="py-3 px-3 font-semibold text-white flex items-center gap-2">
